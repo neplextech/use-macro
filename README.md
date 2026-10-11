@@ -1,4 +1,4 @@
-# ESBuild Plugin Use Macro
+# `"use macro"`
 
 This is a plugin for [esbuild](https://esbuild.github.io/) that allows you to use macros in your code. Macros are a way to define a function that will be executed at compile time, and will replace the macro call with the result of the function.
 
@@ -74,13 +74,13 @@ export const formData = $formData();
 ### Now lets register the macro in the esbuild plugin
 
 ```typescript
-import { build } from 'esbuild';
-import { esbuildPluginUseMacro } from 'use-macro';
+import { build } from "esbuild";
+import { esbuildPluginUseMacro } from "use-macro";
 
 build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: ["src/index.ts"],
   bundle: true,
-  outfile: 'dist/index.js',
+  outfile: "dist/index.js",
   plugins: [esbuildPluginUseMacro()],
 }).catch(() => process.exit(1));
 ```
@@ -128,7 +128,7 @@ Notice how entire function was removed and the function call was replaced with t
 `use-macro` can be used without esbuild as a standalone transformer. This can be useful if you want to use macros in other tools programmatically.
 
 ```typescript
-import { MacroTransformer } from 'use-macro';
+import { MacroTransformer } from "use-macro";
 
 const transformer = new MacroTransformer();
 
@@ -143,7 +143,7 @@ function $random(): number {
  * The first argument is the code to transform.
  * The second argument is the file name, this is used to resolve relative imports.
  */
-const result = transformer.transform(code, 'file.ts');
+const result = transformer.transform(code, "file.ts");
 
 /*
 {

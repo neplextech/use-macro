@@ -1,17 +1,16 @@
-import { runInNewContext } from 'vm';
-import * as ts from 'typescript';
-import { dirname } from 'path';
-import { createRequire } from 'module';
-import { ParserOptions } from '@babel/parser';
-import { parse } from '@babel/parser';
-import _traverse from '@babel/traverse';
-import * as t from '@babel/types';
-import _generate from '@babel/generator';
-import { readFile } from 'node:fs/promises';
-import { OnLoadResult } from 'esbuild';
-import { stringify } from './stringify.js';
+import { runInNewContext } from "vm";
+import * as ts from "typescript";
+import { dirname } from "path";
+import { createRequire } from "module";
+import { ParserOptions } from "@babel/parser";
+import { parse } from "@babel/parser";
+import _traverse from "@babel/traverse";
+import * as t from "@babel/types";
+import _generate from "@babel/generator";
+import { OnLoadResult } from "esbuild";
+import { stringify } from "./stringify.js";
 
-type SourceLoaderType = 'js' | 'jsx' | 'ts' | 'tsx';
+type SourceLoaderType = "js" | "jsx" | "ts" | "tsx";
 
 interface MacroFunction {
   ast: t.FunctionDeclaration | t.FunctionExpression;
@@ -29,15 +28,15 @@ const getParserOptions = (filepath: string) => {
   const isModule = /^m/.test(filepath);
 
   return {
-    sourceType: isModule ? 'module' : 'unambiguous',
+    sourceType: isModule ? "module" : "unambiguous",
     plugins: [
-      ...(isTS ? ['typescript'] : []),
-      ...(isJSX ? ['jsx'] : []),
-      'decorators-legacy',
-      'classProperties',
-      'optionalChaining',
-      'nullishCoalescingOperator',
-    ] as ParserOptions['plugins'],
+      ...(isTS ? ["typescript"] : []),
+      ...(isJSX ? ["jsx"] : []),
+      "decorators-legacy",
+      "classProperties",
+      "optionalChaining",
+      "nullishCoalescingOperator",
+    ] as ParserOptions["plugins"],
   } satisfies ParserOptions;
 };
 
@@ -63,7 +62,7 @@ const executeMacro = (macroFunction: MacroFunction) => {
   const macroModule = `
         ${transpiledCode}
         // do not export this as it is evaluated in vm which directly returns the result
-        ${macroFunction.ast.id?.name}(${macroFunction.args.join(', ')})`;
+        ${macroFunction.ast.id?.name}(${macroFunction.args.join(", ")})`;
 
   const result = runInNewContext(`${macroModule}`, {
     ...Object.fromEntries(Object.entries(globalThis)),
@@ -100,7 +99,7 @@ export class MacroTransformer {
 
   public async transform(
     contents: string,
-    filePath: string
+    filePath: string,
   ): Promise<OnLoadResult> {
     const macroFunctions = this.functions;
     const macroCache = this.cache;
@@ -114,7 +113,7 @@ export class MacroTransformer {
 
     const runMacro = async (
       name: string,
-      fn: MacroFunction
+      fn: MacroFunction,
     ): Promise<string> => {
       if (macroCache.has(name)) {
         return macroCache.get(name) as string;
@@ -128,7 +127,7 @@ export class MacroTransformer {
     };
 
     traverse(ast, {
-      'FunctionDeclaration|FunctionExpression|ArrowFunctionExpression'(path) {
+      "FunctionDeclaration|FunctionExpression|ArrowFunctionExpression"(path) {
         const node = path.node;
 
         if (!t.isFunction(node)) return;
@@ -138,7 +137,7 @@ export class MacroTransformer {
 
         if (body.directives) {
           const directive = body.directives.find(
-            (d) => d.value.value === 'use macro'
+            (d) => d.value.value === "use macro",
           );
 
           if (directive) {
@@ -156,7 +155,7 @@ export class MacroTransformer {
 
             if (!functionName) {
               const err = new Error(
-                `Macro function at at ${filePath}:${node.loc?.start.line}:${node.loc?.start.column} must have a name. If you are using an IIFE, it is not supported.`
+                `Macro function at at ${filePath}:${node.loc?.start.line}:${node.loc?.start.column} must have a name. If you are using an IIFE, it is not supported.`,
               );
 
               throw err;
@@ -169,7 +168,7 @@ export class MacroTransformer {
                     t.identifier(functionName),
                     // @ts-ignore
                     node.params,
-                    body
+                    body,
                   ),
               path: filePath,
               args: node.params,
@@ -198,7 +197,7 @@ export class MacroTransformer {
           state.modifications.push(async () => {
             const value = await runMacro(functionName, fn);
             const newNode = t.identifier(value);
-            t.addComment(newNode, 'leading', ` @__MACRO__ ${functionName} `);
+            t.addComment(newNode, "leading", ` @__MACRO__ ${functionName} `);
             path.replaceWith(newNode);
           });
         }
@@ -222,7 +221,7 @@ export class MacroTransformer {
 
     return {
       contents: code,
-      loader: filePath.split('.').pop() as SourceLoaderType,
+      loader: filePath.split(".").pop() as SourceLoaderType,
     };
   }
 }
