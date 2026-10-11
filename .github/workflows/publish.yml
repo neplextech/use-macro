@@ -1,0 +1,83 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version, explicit prerelease, or lowercase prerelease channel
+        required: true
+        type: string
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  detect-release:
+    if: github.repository == 'neplextech/use-macro' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Decide whether to publish
+        id: release
+        env:
+          RELEASE_INPUT: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            node scripts/release-version.mjs --dispatch
+          else
+            node scripts/release-version.mjs --push
+          fi
+
+  publish:
+    needs: detect-release
+    if: needs.detect-release.outputs.publish == 'true' && github.repository == 'neplextech/use-macro' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: npm-publish-use-macro
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
+      NPM_TAG: ${{ needs.detect-release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+      - name: Configure npm CLI and registry
+        run: |
+          npm install --global npm@^11.21.0
+          npm config set registry https://registry.npmjs.org/
+          node --input-type=module -e "const { execFileSync } = await import('node:child_process'); const nodeParts = process.versions.node.split('.').map(Number); const npmVersion = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim(); const npmParts = npmVersion.split('.').map(Number); if (nodeParts[0] < 22 || (nodeParts[0] === 22 && nodeParts[1] < 14)) throw new Error('npm trusted publishing requires Node 22.14.0+.'); if (npmParts[0] < 11 || (npmParts[0] === 11 && npmParts[1] < 21)) throw new Error('OIDC dist-tag publishing requires npm 11.21.0+.'); console.log('Node', process.versions.node, 'npm', npmVersion);"
+      - name: Refuse an existing package version
+        run: node scripts/assert-version-available.mjs
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Stamp release version in the temporary checkout
+        run: node scripts/stamp-version.mjs
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun test --coverage
+      - run: bun run build
+      - run: bun run check:package
+      - name: Inspect the exact npm package contents
+        run: npm pack --dry-run --json
+      - name: Publish with npm OIDC trusted publishing
+        run: npm publish --access public --tag "$NPM_TAG"

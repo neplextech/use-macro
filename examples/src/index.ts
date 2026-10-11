@@ -1,47 +1,27 @@
-function $version(): string {
-  'use macro';
-  const { version } = require('../package.json');
-  console.log(`Version: ${version}`);
+import type {} from '../../src/index.js';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-  return version;
+function getVersion(): string {
+  'use macro';
+
+  const filePath = resolve(globalThis.__dirname, '../../package.json');
+  trackFile(filePath);
+  return JSON.parse(readFileSync(filePath, 'utf8')).version;
 }
 
-function $compiledAt(): Date {
+async function getMessage(): Promise<string> {
   'use macro';
-  return new Date();
+
+  const filePath = resolve(globalThis.__dirname, 'message.txt');
+  trackFile(filePath);
+  return await readFileSync(filePath, 'utf8');
 }
 
-async function $message(): Promise<string> {
+function describe(prefix: string, value: string): string {
   'use macro';
-
-  const fs = require('fs').promises;
-  const path = require('path');
-  const messageText = path.resolve(__dirname, 'message.txt');
-  const res = await fs.readFile(messageText, 'utf8');
-
-  return res;
+  return `${prefix}: ${value}`;
 }
 
-const $url = () => {
-  'use macro';
-  const url = new URL('https://example.com?foo=bar&baz=qux');
-
-  return [url, url.searchParams];
-};
-
-const $formData = function () {
-  'use macro';
-  const formData = new FormData();
-  formData.append('foo', 'bar');
-  formData.append('baz', 'qux');
-
-  return formData;
-};
-
-export const version = $version();
-export const compiledAt = $compiledAt();
-export const message = $message() as unknown as Awaited<
-  ReturnType<typeof $message>
->;
-export const url = $url();
-export const formData = $formData();
+export const version = getVersion();
+export const message = describe('Message', await getMessage());

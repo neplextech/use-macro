@@ -1,48 +1,97 @@
 {
   "name": "use-macro",
-  "version": "1.1.0",
-  "description": "esbuild plugin that allows you to execute functions at compile time and inline the output",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "2.0.0",
+  "description": "Compile-time JavaScript and TypeScript macros with build-tool integrations.",
+  "license": "MIT",
+  "author": "Twilight <hello@twlite.dev>",
   "type": "module",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "test": "cd ./examples && bun run build"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./esbuild": {
+      "types": "./dist/esbuild.d.ts",
+      "import": "./dist/esbuild.js",
+      "default": "./dist/esbuild.js"
+    },
+    "./babel": {
+      "types": "./dist/babel.d.ts",
+      "import": "./dist/babel.js",
+      "default": "./dist/babel.js"
+    },
+    "./rollup": {
+      "types": "./dist/rollup.d.ts",
+      "import": "./dist/rollup.js",
+      "default": "./dist/rollup.js"
+    },
+    "./package.json": "./package.json"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "bun@1.4.3",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neplextech/use-macro.git"
+    "url": "https://github.com/neplextech/use-macro.git"
   },
-  "keywords": [
-    "macro",
-    "esbuild",
-    "compile-time",
-    "plugin"
-  ],
-  "author": "Twilight <hello@twlite.dev>",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/neplextech/use-macro/issues"
   },
   "homepage": "https://github.com/neplextech/use-macro#readme",
-  "devDependencies": {
-    "@types/babel__generator": "^7.6.8",
-    "@types/babel__traverse": "^7.20.6",
-    "@types/node": "^22.10.2",
-    "esbuild": "^0.24.2",
-    "typescript": "^5.7.2"
+  "keywords": [
+    "compile-time",
+    "macro",
+    "babel",
+    "esbuild",
+    "rollup",
+    "vite",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "format:check": "biome format src test scripts benchmarks examples/src examples/build.mjs examples/package.json package.json tsconfig.json tsconfig.build.json biome.json --no-errors-on-unmatched",
+    "format:write": "biome format --write src test scripts benchmarks examples/src examples/build.mjs examples/package.json package.json tsconfig.json tsconfig.build.json biome.json --no-errors-on-unmatched",
+    "lint": "biome lint src test scripts benchmarks examples/src examples/build.mjs",
+    "check:package": "bun scripts/check-package.ts",
+    "bench": "bun benchmarks/run.ts"
   },
   "dependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/generator": "^7.26.3",
-    "@babel/parser": "^7.26.3",
-    "@babel/preset-typescript": "^7.26.0",
-    "@babel/traverse": "^7.26.4",
-    "@babel/types": "^7.26.3",
-    "@types/babel__core": "^7.20.5",
+    "@babel/generator": "^7.29.8",
+    "@babel/parser": "^7.29.7",
+    "@babel/traverse": "^7.29.10",
+    "@babel/types": "^7.29.8",
     "devalue": "^6.0.2"
+  },
+  "peerDependencies": {
+    "esbuild": ">=0.24.0"
+  },
+  "peerDependenciesMeta": {
+    "esbuild": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@jridgewell/trace-mapping": "^0.3.31",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
   }
 }
