@@ -56,6 +56,24 @@ await build({
 });
 ```
 
+### Next.js
+
+`withMacro` adds the loader to both Next.js Webpack and Turbopack configurations. It skips `node_modules` by default. The Turbopack loader uses esbuild to remove TypeScript syntax before returning JavaScript to Turbopack.
+
+```ts
+import { withMacro } from "use-macro/next";
+
+const nextConfig = {
+  reactStrictMode: true,
+};
+
+export default withMacro(nextConfig, {
+  execution: { mode: "trusted" },
+});
+```
+
+Install `esbuild` as a development dependency when using the default macro compiler or the Turbopack integration. Next.js 16 uses Turbopack by default; the wrapper also adds a Webpack loader for builds started with `--webpack`.
+
 ### Babel
 
 Babel visitors are synchronous, so an ordinary Babel plugin cannot await asynchronous macro execution. Use the async preprocessor before Babel generates code. It mutates and reuses the supplied AST; Babel can generate the result once afterward.
@@ -71,21 +89,17 @@ const ast = parseSync(source, {
 });
 if (!ast) throw new Error("Babel did not produce an AST.");
 
-const macros = createBabelMacroPreprocessor({ execution: { mode: "trusted" } });
-try {
-  const result = await macros.transform(ast, {
-    filename: "src/index.ts",
-    source,
-  });
-  const output = await transformFromAstAsync(result.ast, source, {
-    filename: "src/index.ts",
-    configFile: false,
-    babelrc: false,
-  });
-  process.stdout.write(output?.code ?? "");
-} finally {
-  await macros.dispose();
-}
+await using macros = createBabelMacroPreprocessor({ execution: { mode: "trusted" } });
+const result = await macros.transform(ast, {
+  filename: "src/index.ts",
+  source,
+});
+const output = await transformFromAstAsync(result.ast, source, {
+  filename: "src/index.ts",
+  configFile: false,
+  babelrc: false,
+});
+process.stdout.write(output?.code ?? "");
 ```
 
 `createBabelMacroPreprocessor` is an async preprocessing API, not a Babel visitor plugin. `transformBabelAst` is available for one-shot transforms.
@@ -211,19 +225,15 @@ The macro worker exposes `globalThis.__dirname` and `globalThis.__filename` for 
 ```ts
 import { MacroTransformer } from "use-macro";
 
-const transformer = new MacroTransformer({ execution: { mode: "trusted" } });
-try {
-  const result = await transformer.transform(
-    source,
-    "/absolute/path/to/file.ts",
-  );
-  console.log(result.code, result.map, result.watchFiles);
-} finally {
-  await transformer.dispose();
-}
+await using transformer = new MacroTransformer({ execution: { mode: "trusted" } });
+const result = await transformer.transform(
+  source,
+  "/absolute/path/to/file.ts",
+);
+console.log(result.code, result.map, result.watchFiles);
 ```
 
-The transformer also accepts Babel `File` or `Program` ASTs through `transformAst` and `transformAstInPlace`. `MacroCompiler` and the default `esbuildMacroCompiler` are exported for custom integrations.
+`MacroTransformer` and the Babel preprocessor implement `Symbol.asyncDispose`, so TypeScript 5.2+ can manage them with `await using`. Webpack builds reuse one transformer per compiler and dispose it at shutdown. Turbopack loader calls create and dispose a transformer per source file because its loader context does not expose a compiler shutdown hook. The transformer also accepts Babel `File` or `Program` ASTs through `transformAst` and `transformAstInPlace`. `MacroCompiler` and the default `esbuildMacroCompiler` are exported for custom integrations.
 
 ## Compatibility and limitations
 

@@ -30,6 +30,13 @@ afterEach(async () => {
 });
 
 describe('source transformation', () => {
+  test('can manage the transformer with await using', async () => {
+    await using transformer = new MacroTransformer({ execution: { mode: 'restricted' } });
+    const result = await transformer.transform('export const value = 42;', '/tmp/disposable.ts');
+    expect(result.changed).toBe(false);
+    expect(typeof transformer[Symbol.asyncDispose]).toBe('function');
+  });
+
   test('returns ordinary modules without parsing or generating new code', async () => {
     const source = 'export const answer = 42;\n';
     const result = await createTransformer({ execution: { mode: 'restricted' } }).transform(source, '/tmp/plain.ts');

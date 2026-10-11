@@ -71,13 +71,12 @@ describe('build-tool integrations', () => {
   test('preprocesses a Babel AST without reparsing it', async () => {
     const source = `async function getValue() { 'use macro'; return await Promise.resolve(42); }\nexport const result = await getValue();`;
     const ast = parse(source, { sourceType: 'module' });
-    const preprocessor = createBabelMacroPreprocessor({ execution: { mode: 'trusted' } });
+    await using preprocessor = createBabelMacroPreprocessor({ execution: { mode: 'trusted' } });
     const result = await preprocessor.transform(ast, { filename: '/tmp/babel.ts', source });
     expect(result.changed).toBe(true);
     const output = generate(result.ast).code;
     expect(output).toContain('export const result = 42;');
     expect(output).not.toContain('function getValue');
-    await preprocessor.dispose();
   });
 
   test('registers macro dependencies with Rollup-compatible transform hooks', async () => {

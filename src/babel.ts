@@ -12,17 +12,27 @@ export interface BabelAstTransformOptions {
   signal?: AbortSignal;
 }
 
+export interface BabelMacroPreprocessor extends AsyncDisposable {
+  transform(ast: File | Program, transformOptions: BabelAstTransformOptions): Promise<AstTransformResult>;
+  dispose(): Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
+}
+
 /** Create an async preprocessor that mutates the Babel AST supplied by the caller. */
 export function createBabelMacroPreprocessor(options: BabelMacroPreprocessorOptions = {}) {
   const transformer = options.transformer ?? new MacroTransformer(options);
-  return {
+  const preprocessor: BabelMacroPreprocessor = {
     transform(ast: File | Program, transformOptions: BabelAstTransformOptions): Promise<AstTransformResult> {
       return transformer.transformAstInPlace(ast, transformOptions);
     },
     dispose(): Promise<void> {
       return transformer.dispose();
     },
+    [Symbol.asyncDispose](): Promise<void> {
+      return transformer[Symbol.asyncDispose]();
+    },
   };
+  return preprocessor;
 }
 
 /** Convenience one-shot API for tools that already have a Babel AST. */
@@ -31,10 +41,6 @@ export async function transformBabelAst(
   options: BabelAstTransformOptions & BabelMacroPreprocessorOptions,
 ): Promise<AstTransformResult> {
   if (options.transformer) return options.transformer.transformAstInPlace(ast, options);
-  const transformer = new MacroTransformer(options);
-  try {
-    return await transformer.transformAstInPlace(ast, options);
-  } finally {
-    await transformer.dispose();
-  }
+  await using transformer = new MacroTransformer(options);
+  return transformer.transformAstInPlace(ast, options);
 }

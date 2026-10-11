@@ -28,6 +28,11 @@
       "import": "./dist/rollup.js",
       "default": "./dist/rollup.js"
     },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js",
+      "default": "./dist/next.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -54,6 +59,7 @@
     "babel",
     "esbuild",
     "rollup",
+    "nextjs",
     "vite",
     "typescript"
   ],
@@ -61,7 +67,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-next-loader.mjs",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:coverage": "bun test --coverage",

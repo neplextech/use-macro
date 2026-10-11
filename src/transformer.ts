@@ -668,7 +668,7 @@ class MacroWorkerRunner {
   }
 }
 
-export class MacroTransformer {
+export class MacroTransformer implements AsyncDisposable {
   private readonly compiler: MacroCompiler;
   private readonly parsedModules = new Map<string, ParsedCacheEntry>();
   private readonly compiledMacros = new Map<string, CompiledCacheEntry>();
@@ -892,6 +892,10 @@ export class MacroTransformer {
     this.compiledMacros.clear();
     this.compileInFlight.clear();
     this.parsedModules.clear();
+  }
+
+  [Symbol.asyncDispose](): Promise<void> {
+    return this.dispose();
   }
 
   private isExcluded(filename: string): boolean {

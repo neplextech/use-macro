@@ -20,7 +20,7 @@ for (const exportPath of exportPaths) {
   if (!existsSync(path)) throw new Error(`Package export target does not exist: ${exportPath}`);
 }
 
-const packageEntries = ['.', './esbuild', './babel', './rollup'];
+const packageEntries = ['.', './esbuild', './babel', './rollup', './next'];
 for (const entry of packageEntries) {
   execFileSync(
     'node',
@@ -32,6 +32,7 @@ for (const entry of packageEntries) {
   );
 }
 execFileSync('node', ['scripts/node-smoke.mjs'], { cwd: root, stdio: 'inherit' });
+execFileSync('node', ['scripts/node-next-loader-smoke.mjs'], { cwd: root, stdio: 'inherit' });
 
 const pack = spawnSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8' });
 if (pack.status !== 0) throw new Error(`npm pack --dry-run failed:\n${pack.stderr || pack.stdout}`);
@@ -50,6 +51,9 @@ const required = [
   'dist/esbuild.js',
   'dist/babel.js',
   'dist/rollup.js',
+  'dist/next.js',
+  'dist/next-loader.js',
+  'dist/next-loader.cjs',
 ];
 for (const file of required) {
   if (!files.has(file)) throw new Error(`npm pack is missing required file: ${file}`);
