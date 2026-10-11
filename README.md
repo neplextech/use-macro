@@ -150,7 +150,20 @@ async function loadData() {
 export const data = loadData();
 ```
 
-The output contains the resolved object. Rejections include the macro call's source location. A configured timeout terminates the worker running the macro.
+The output contains the resolved object. To have TypeScript treat the call as its awaited return type before transformation, wrap it with `unwrap`:
+
+```ts
+import { unwrap } from "use-macro";
+
+async function loadData() {
+  "use macro";
+  return await Promise.resolve({ ok: true });
+}
+
+export const data = unwrap<typeof loadData>(loadData());
+```
+
+`unwrap` returns its argument unchanged at runtime; the transformer replaces the macro call with its resolved value. Rejections include the macro call's source location. A configured timeout terminates the worker running the macro.
 
 ### Imports and cross-file macros
 
