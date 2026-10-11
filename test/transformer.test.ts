@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { MacroTransformer, type MacroTransformerOptions } from '../src/transformer.js';
 import { esbuildMacroCompiler } from '../src/compiler.js';
 
@@ -123,8 +123,9 @@ export const result = get();
 
   test('rejects non-static arguments with a call-site diagnostic', async () => {
     const source = `function macro(value: number) { 'use macro'; return value; }\nmacro(getValue());`;
-    await expect(createTransformer().transform(source, '/tmp/dynamic.ts')).rejects.toThrow(
-      '/tmp/dynamic.ts:2:1: TypeError: Macro arguments must be serializable compile-time values',
+    const filename = '/tmp/dynamic.ts';
+    await expect(createTransformer().transform(source, filename)).rejects.toThrow(
+      `${resolve(filename)}:2:1: TypeError: Macro arguments must be serializable compile-time values`,
     );
   });
 
@@ -189,9 +190,10 @@ export const value = getValue();
 
   test('preserves source locations through an output source map', async () => {
     const source = `\nfunction value() { 'use macro'; return 4; }\nexport const result = value();\n`;
-    const result = await createTransformer().transform(source, '/tmp/source-map.ts');
+    const filename = '/tmp/source-map.ts';
+    const result = await createTransformer().transform(source, filename);
     expect(result.map).toBeDefined();
-    expect((result.map as { sources: string[] }).sources).toContain('/tmp/source-map.ts');
+    expect((result.map as { sources: string[] }).sources).toContain(resolve(filename).replaceAll('\\', '/'));
     const callOffset = source.indexOf('value();');
     const callColumn = callOffset - source.lastIndexOf('\n', callOffset) - 1;
     const generatedColumn = result.code.indexOf('4');
@@ -522,8 +524,9 @@ describe('execution policy', () => {
 
   test('reports rejected async macros at the call site without a worker stack', async () => {
     const source = `async function fail() { 'use macro'; throw new Error('expected failure'); }\nfail();`;
-    await expect(createTransformer().transform(source, '/tmp/fail.ts')).rejects.toThrow(
-      '/tmp/fail.ts:2:1: MacroExecutionError: Error: expected failure',
+    const filename = '/tmp/fail.ts';
+    await expect(createTransformer().transform(source, filename)).rejects.toThrow(
+      `${resolve(filename)}:2:1: MacroExecutionError: Error: expected failure`,
     );
   });
 
@@ -544,13 +547,13 @@ describe('execution policy', () => {
     expect(right.status).toBe('rejected');
     if (left.status === 'rejected') {
       expect(left.reason).toBeInstanceOf(Error);
-      expect(left.reason.message).toContain('/tmp/left-failure.ts:2:1');
+      expect(left.reason.message).toContain(`${resolve('/tmp/left-failure.ts')}:2:1`);
       expect(left.reason.message).toContain('left failure');
       expect(left.reason.message).not.toContain('right failure');
     }
     if (right.status === 'rejected') {
       expect(right.reason).toBeInstanceOf(Error);
-      expect(right.reason.message).toContain('/tmp/right-failure.ts:3:1');
+      expect(right.reason.message).toContain(`${resolve('/tmp/right-failure.ts')}:3:1`);
       expect(right.reason.message).toContain('right failure');
       expect(right.reason.message).not.toContain('left failure');
     }
