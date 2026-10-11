@@ -89,6 +89,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@jridgewell/trace-mapping": "^0.3.31",
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__traverse": "^7.28.0",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
